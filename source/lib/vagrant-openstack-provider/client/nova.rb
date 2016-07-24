@@ -188,6 +188,16 @@ module VagrantPlugins
         end
       end
 
+      def delete_snapshot(env, server_id, snapshot_name)
+        snapshot = list_snapshots(env, server_id).find { |s| s.name == snapshot_name }
+
+        return nil if snapshot.nil?
+
+        delete(
+          env,
+          "#{@session.endpoints[:compute]}/images/#{snapshot.id}")
+      end
+
       private
 
       VM_STATES =
