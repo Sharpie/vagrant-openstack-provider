@@ -179,6 +179,15 @@ module VagrantPlugins
         get_all_images(env, params: { server: server_id })
       end
 
+      def create_snapshot(env, server_id, snapshot_name)
+        instance_exists do
+          post(
+            env,
+            "#{@session.endpoints[:compute]}/servers/#{server_id}/action",
+            { createImage: { name: snapshot_name } }.to_json)
+        end
+      end
+
       private
 
       VM_STATES =
