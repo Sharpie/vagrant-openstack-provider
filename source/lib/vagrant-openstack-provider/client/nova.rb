@@ -198,6 +198,20 @@ module VagrantPlugins
           "#{@session.endpoints[:compute]}/images/#{snapshot.id}")
       end
 
+      def restore_snapshot(env, server_id, snapshot_name)
+        # TODO: Would be nice to allow an arbitrary UUID to be passed.
+        snapshot = list_snapshots(env, server_id).find { |s| s.name == snapshot_name }
+
+        return nil if snapshot.nil?
+
+        instance_exists do
+          post(
+            env,
+            "#{@session.endpoints[:compute]}/servers/#{server_id}/action",
+            { rebuild: { imageRef: snapshot.id } }.to_json)
+        end
+      end
+
       private
 
       VM_STATES =
