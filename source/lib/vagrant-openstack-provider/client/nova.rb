@@ -43,8 +43,18 @@ module VagrantPlugins
       end
 
       def get_all_images(env, headers = {})
-        images_json = get(env, "#{@session.endpoints[:compute]}/images", headers)
-        JSON.parse(images_json)['images'].map { |fl| Image.new(fl['id'], fl['name'], 'unknown') }
+        images_json = get(env, "#{@session.endpoints[:compute]}/images/detail", headers)
+        JSON.parse(images_json)['images'].map do |fl|
+          Image.new(
+            fl['id'],
+            fl['name'],
+            'unknown',
+            nil,
+            fl['minRam'],
+            fl['minDisk'],
+            fl['metadata']
+          )
+        end
       end
 
       def create_server(env, options)
@@ -184,31 +194,25 @@ module VagrantPlugins
           post(
             env,
             "#{@session.endpoints[:compute]}/servers/#{server_id}/action",
-            { createImage: { name: snapshot_name } }.to_json)
+            { createImage: {
+              name: snapshot_name,
+              metadata: { vagrant_snapshot: true }
+            } }.to_json)
         end
       end
 
-      def delete_snapshot(env, server_id, snapshot_name)
-        snapshot = list_snapshots(env, server_id).find { |s| s.name == snapshot_name }
-
-        return nil if snapshot.nil?
-
+      def delete_snapshot(env, snapshot_id)
         delete(
           env,
-          "#{@session.endpoints[:compute]}/images/#{snapshot.id}")
+          "#{@session.endpoints[:compute]}/images/#{snapshot_id}")
       end
 
-      def restore_snapshot(env, server_id, snapshot_name)
-        # TODO: Would be nice to allow an arbitrary UUID to be passed.
-        snapshot = list_snapshots(env, server_id).find { |s| s.name == snapshot_name }
-
-        return nil if snapshot.nil?
-
+      def restore_snapshot(env, server_id, snapshot_id)
         instance_exists do
           post(
             env,
             "#{@session.endpoints[:compute]}/servers/#{server_id}/action",
-            { rebuild: { imageRef: snapshot.id } }.to_json)
+            { rebuild: { imageRef: snapshot_id } }.to_json)
         end
       end
 

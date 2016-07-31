@@ -10,11 +10,16 @@ module VagrantPlugins
 
         def call(env)
           nova = env[:openstack_client].nova
+          machine_snapshots = nova.list_snapshots(env, env[:machine].id)
 
-          env[:ui].info(I18n.t('vagrant.actions.vm.snapshot.restoring',
-                               name: env[:snapshot_name]))
+          snapshot = machine_snapshots.find { |s| s.name == env[:snapshot_name] }
 
-          nova.restore_snapshot(env, env[:machine].id, env[:snapshot_name])
+          unless snapshot.nil?
+            env[:ui].info(I18n.t('vagrant.actions.vm.snapshot.restoring',
+                                 name: env[:snapshot_name]))
+
+            nova.restore_snapshot(env, env[:machine].id, snapshot.id)
+          end
 
           @app.call env
         end
